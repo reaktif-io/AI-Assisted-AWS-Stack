@@ -17,7 +17,7 @@ import { ApplicationTargetGroup } from '@aws-cdk/aws-elasticloadbalancingv2';
 export class AiAssistedComputing extends cdk.Stack {
 
   get availabilityZones(): string [] {
-    return ['eu-central-1a', 'eu-central-1b']
+    return ['eu-west-2a', 'eu-west-2b']
   }
 
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
@@ -25,7 +25,7 @@ export class AiAssistedComputing extends cdk.Stack {
 
     // The code that defines your stack goes here
 
-    const bisuDevVpc = new Vpc(this, 'bisu-vpc-dev', {
+    const devVpc = new Vpc(this, 'vpc-dev', {
       cidr: '10.0.0.0/16',
       enableDnsHostnames: true,
       enableDnsSupport: true,
@@ -38,57 +38,50 @@ export class AiAssistedComputing extends cdk.Stack {
       natGateways: 0,
     });
     
-    const bisuBackendDevSg = new SecurityGroup(this, 'bisu-backend-sg-dev', {
-      vpc: bisuDevVpc,
+    const aiAssistedAppDevSg = new SecurityGroup(this, 'ai-assisted-app-sg-dev', {
+      vpc: devVpc,
       allowAllOutbound: true,
-      securityGroupName: 'bisu-backend-sg-dev',
-      description: 'bisu backend dev security group',
+      securityGroupName: 'ai-assisted-app-sg-dev',
+      description: 'ai-assisted-app backend dev security group',
     });
 
-    bisuBackendDevSg.addIngressRule(Peer.anyIpv4(), Port.tcp(22), 'allow SSH from anywhere');
-    bisuBackendDevSg.addIngressRule(Peer.anyIpv4(), Port.tcp(3000), 'node app port');
-    bisuBackendDevSg.addIngressRule(Peer.anyIpv4(), Port.tcp(3001), 'node app port');
+    aiAssistedAppDevSg.addIngressRule(Peer.anyIpv4(), Port.tcp(22), 'allow SSH from anywhere');
+    aiAssistedAppDevSg.addIngressRule(Peer.anyIpv4(), Port.tcp(8000), 'python app port');
 
     const awsAMI = new AmazonLinuxImage({
       generation: AmazonLinuxGeneration.AMAZON_LINUX_2,
     });
 
-    //TODO: generate IAM Role for bisu-backend-dev app.
-
-    const bisuBackendDevInstance = new Instance(this, 'bisu-backend-dev', {
-      vpc: bisuDevVpc,
+    const devInstance = new Instance(this, 'ai-assisted-app-dev', {
+      vpc: devVpc,
       instanceType: new InstanceType('t2.micro'),
       machineImage: awsAMI,
-      keyName: 'bisu-backend-dev-kp',
-      securityGroup: bisuBackendDevSg,
-      instanceName: 'bisu-backend-dev',
+      keyName: 'ai-assisted-dev-kp',
+      securityGroup: aiAssistedAppDevSg,
+      instanceName: 'ai-assisted-app-dev',
     });
 
-    const appLoadBalancer = new elbv2.ApplicationLoadBalancer(this, 'bisu-backend-dev-alb', {
-      vpc: bisuDevVpc,
+    const appLoadBalancer = new elbv2.ApplicationLoadBalancer(this, 'ai-assisted-app-dev-alb', {
+      vpc: devVpc,
       internetFacing: true,
-      loadBalancerName: 'bisu-backend-dev-alb',
-      securityGroup: bisuBackendDevSg,
+      loadBalancerName: 'ai-assisted-app-dev-alb',
+      securityGroup: aiAssistedAppDevSg,
     });
 
-    // control bisuBackendDevInstance.instanceId for instance ids 
-
-    const appLbTargetGroup = new ApplicationTargetGroup(this, 'bisu-backend-dev-targetgroup', {
-      vpc: bisuDevVpc,
-      targetGroupName: 'bisu-backend-dev-targetgroup',
+    const appLbTargetGroup = new ApplicationTargetGroup(this, 'ai-assisted-app-dev-targetgroup', {
+      vpc: devVpc,
+      targetGroupName: 'ai-assisted-app-dev-targetgroup',
       targets: [
-        new targets.InstanceIdTarget('i-01e49c78ee117d5c2', 3000),
-        new targets.InstanceIdTarget('i-01e49c78ee117d5c2', 3001),
+        new targets.InstanceIdTarget(devInstance.instanceId, 8000),
       ],
       healthCheck: {
         enabled: true,
         path: '/health-check',
-        //interval: cdk.Duration.seconds(60),
       },
       port: 80,
     });
 
-    const appLbListener = appLoadBalancer.addListener('bisu-backend-dev-alb-listener', {
+    const appLbListener = appLoadBalancer.addListener('ai-assisted-app-dev-alb-listener', {
       port: 80,
       defaultTargetGroups: [appLbTargetGroup],
     });
