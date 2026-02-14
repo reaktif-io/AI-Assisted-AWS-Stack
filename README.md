@@ -1,14 +1,14 @@
-# Welcome to your CDK TypeScript project!
+# AI-Assisted-AWS-Stack
 
-This is a blank project for TypeScript development with CDK.
+> **Archived** — Research project from October 2020. No longer maintained.
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+AWS CDK infrastructure for [AIAssisted-Core](https://github.com/reaktif-io/AIAssisted-Core) — a GPT-2 code generation project that predated GitHub Copilot by over a year. The vision was sound but the base model (GPT-2 124M) was too small and the market didn't exist yet. Shelved in 2020.
 
-## Useful commands
+## Stack
 
- * `npm run build`   compile typescript to js
- * `npm run watch`   watch for changes and compile
- * `npm run test`    perform the jest unit tests
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk synth`       emits the synthesized CloudFormation template
+AWS CDK (TypeScript), EC2, Application Load Balancer
+
+## Authors
+
+- [Azmi Mengu](https://github.com/azmimengu) — AWS infrastructure
+- [Joseph Goksu](https://github.com/josephgoksu) — [ML pipeline](https://github.com/reaktif-io/AIAssisted-Core)
